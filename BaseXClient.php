@@ -11,6 +11,12 @@ class Session {
   // class variables.
   var $socket, $info, $buffer, $bpos, $bsize;
 
+	/**
+	 * @param string $h ホスト名
+	 * @param integer $p ポート番号
+	 * @param string $user ユーザー名
+	 * @param string $pw パスワード
+	*/
   function __construct($h, $p, $user, $pw) {
     // create server connection
     $this->socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
@@ -31,6 +37,11 @@ class Session {
     }
   }
 
+	/**
+	 * @param string $com basexコマンド文字列
+	 * @return string 実行結果を表す文字列
+	 * @throws Exception 実行時の情報が例外として投げられる
+	*/
   public function execute($com) {
     // send command to server
     socket_write($this->socket, $com.chr(0));
@@ -44,6 +55,10 @@ class Session {
     return $result;
   }
 
+	/**
+	 * @param string $q xquery文字列
+	 * @return Query XQueryをラップしたオブジェクトを返す
+	*/
   public function query($q) {
     return new Query($this, $q);
   }
@@ -119,11 +134,20 @@ class Session {
 class Query {
   var $session, $id, $open, $cache;
  
+	/**
+	 * @param Session $s Sessionオブジェクト
+	 * @param string $q XQuery文字列
+	*/
   public function __construct($s, $q) {
     $this->session = $s;
     $this->id = $this->exec(chr(0), $q);
   }
 
+	/**
+	 * @param string $name バインドしたいXQuery上の変数名
+	 * @param string $value バインドする値
+	 * @param string $type よく分からん…
+	*/
   public function bind($name, $value, $type = "") {
     $this->exec(chr(3), $this->id.chr(0).$name.chr(0).$value.chr(0).$type);
   }
@@ -132,10 +156,17 @@ class Query {
     $this->exec(chr(14), $this->id.chr(0).$value.chr(0).$type);
   }
 
+	/**
+	 * @return string XQueryの実行結果が文字列として返される
+	*/
   public function execute() {
     return $this->exec(chr(5), $this->id);
   }
 
+	/**
+	 * @return bool
+	 * @throws Exception
+	*/
   public function more() {
     if($this->cache == NULL) {
       $this->pos = 0;
@@ -152,6 +183,9 @@ class Query {
     return false;
   }
 
+	/**
+	 * @return string 実行結果を文字列で返す
+	*/
   public function next() {
     if($this->more()) {
       return $this->cache[$this->pos++];
